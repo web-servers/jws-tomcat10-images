@@ -21,7 +21,13 @@ FROM registry.access.redhat.com/ubi8/openjdk-11
 VOLUME /tmp
 
 USER root
-RUN mkdir -m 777 -p /deployments
+RUN groupadd  -g 1024 tomcat
+RUN useradd -u 1024 -g tomcat -s /sbin/nologin -c "Docker image user" tomcat
+
+RUN mkdir -p /deployments
+RUN chmod 755 /deployments
+RUN chgrp tomcat /deployments
+RUN chown tomcat /deployments
 
 ADD target/tomcat-stuffed-1.0.jar /deployments/app.jar
 ADD conf /deployments/conf
@@ -30,10 +36,17 @@ ADD server.xml.stuffed /deployments/conf/server.xml
 ADD start.sh /opt
 ADD usekube.sh /opt
 ADD usedns.sh /opt
-RUN chmod 777 /opt/*.sh
+RUN chmod 755 /opt
+RUN chmod 555 /opt/*.sh
+RUN chgrp tomcat /opt
+RUN chown tomcat /opt
+
+RUN chgrp tomcat /opt/*.sh
+RUN chown tomcat /opt/*.sh
 
 # COPY *.war /deployments/
-RUN chmod 777 /deployments/webapps
+RUN chgrp tomcat /deployments/webapps
+RUN chown tomcat /deployments/webapps
 
 WORKDIR /deployments
 
@@ -51,8 +64,6 @@ ENV JAVA_OPTS="${JAVA_OPTS} -Djava.util.logging.manager=org.apache.juli.ClassLoa
 
 RUN sh -c 'touch app.jar'
 
-RUN mkdir -p /opt
-
 # Optional: Add Jolokia agent for JMX monitoring and management
 # RUN mkdir /opt/jolokia && wget https://repo.maven.apache.org/maven2/org/jolokia/jolokia-jvm/1.7.1/jolokia-jvm-1.7.1.jar -O /opt/jolokia/jolokia.jar
 # ARG jolokiaport=8778
@@ -64,6 +75,8 @@ RUN mkdir -p /opt
 # ARG prometheusport=9404
 # ENV JAVA_OPTS="-javaagent:/opt/prometheus/prometheus.jar=$prometheusport:conf/prometheus.yaml ${JAVA_OPTS}"
 # EXPOSE $prometheusport
+
+USER 1024
 
 ENTRYPOINT [ "/opt/start.sh" ]
 # ENTRYPOINT [ "sh", "-c", "java $JAVA_OPTS -jar app.jar" ]
