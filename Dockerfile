@@ -47,6 +47,7 @@ RUN chown tomcat /opt/*.sh
 # COPY *.war /deployments/
 RUN chgrp tomcat /deployments/webapps
 RUN chown tomcat /deployments/webapps
+RUN chmod 777 /deployments/webapps
 
 WORKDIR /deployments
 
